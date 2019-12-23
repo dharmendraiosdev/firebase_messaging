@@ -246,13 +246,18 @@ static NSObject<FlutterPluginRegistrar> *_registrar;
 
 - (void)application:(UIApplication *)application
     didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
-#ifdef DEBUG
-  [[FIRMessaging messaging] setAPNSToken:deviceToken type:FIRMessagingAPNSTokenTypeSandbox];
-#else
-  [[FIRMessaging messaging] setAPNSToken:deviceToken type:FIRMessagingAPNSTokenTypeProd];
-#endif
+        [_channel invokeMethod:@"onToken" arguments:[self stringWithDeviceToken:deviceToken]];
+}
 
-  [_channel invokeMethod:@"onToken" arguments:[FIRMessaging messaging].FCMToken];
+- (NSString *)stringWithDeviceToken:(NSData *)deviceToken {
+    const char *data = [deviceToken bytes];
+    NSMutableString *token = [NSMutableString string];
+
+    for (NSUInteger i = 0; i < [deviceToken length]; i++) {
+        [token appendFormat:@"%02.2hhX", data[i]];
+    }
+
+    return [token copy];
 }
 
 // This will only be called for iOS < 10. For iOS >= 10, we make this call when we request
@@ -268,10 +273,10 @@ static NSObject<FlutterPluginRegistrar> *_registrar;
   [_channel invokeMethod:@"onIosSettingsRegistered" arguments:settingsDictionary];
 }
 
-- (void)messaging:(nonnull FIRMessaging *)messaging
-    didReceiveRegistrationToken:(nonnull NSString *)fcmToken {
-  [_channel invokeMethod:@"onToken" arguments:fcmToken];
-}
+// - (void)messaging:(nonnull FIRMessaging *)messaging
+//     didReceiveRegistrationToken:(nonnull NSString *)fcmToken {
+//   [_channel invokeMethod:@"onToken" arguments:fcmToken];
+// }
 
 - (void)messaging:(FIRMessaging *)messaging
     didReceiveMessage:(FIRMessagingRemoteMessage *)remoteMessage {
